@@ -57,6 +57,23 @@ paths:
     get:
       operationId: listContactMessages
       summary: List contact messages
+      parameters:
+        - in: header
+          name: Accept
+          required: true
+          description: Response media type expected by the client
+          schema:
+            type: string
+            enum: [application/json]
+            default: application/json
+        - in: header
+          name: Content-Type
+          required: true
+          description: Request media type
+          schema:
+            type: string
+            enum: [application/json]
+            default: application/json
       responses:
         '200':
           description: List of contact messages
