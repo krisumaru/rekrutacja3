@@ -1,0 +1,27 @@
+volumes:
+  volume_database:
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: h2h-postgres
+    ports:
+      - "15432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - "volume_database:/var/lib/postgresql"
+
+  app:
+    build: ./.docker
+    container_name: h2h-app
+    volumes:
+      - ./:/var/www/html
+      - ./.docker/virtualhost.conf:/etc/apache2/sites-available/000-default.conf
+      - ./.docker/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf
+    ports:
+      - "8180:80"
+    depends_on:
+      - postgres
