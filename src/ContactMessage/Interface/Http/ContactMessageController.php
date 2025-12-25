@@ -30,6 +30,11 @@ class ContactMessageController extends AbstractController
     #[Route('/contact-messages', name: 'contact_message_create', methods: ['POST'])]
     public function create(Request $request, CreateContactMessageValidator $validator): Response
     {
+        $contentType = $request->headers->get('Content-Type');
+        if ($contentType !== 'application/json') {
+            return $this->respondBadRequest(['contentType' => ['Invalid Content-Type']]);
+        }
+
         $data = json_decode($request->getContent(), true);
         if (!is_array($data)) {
             return $this->respondBadRequest(['body' => ['Invalid JSON']]);

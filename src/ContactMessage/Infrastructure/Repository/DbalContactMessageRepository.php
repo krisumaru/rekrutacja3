@@ -29,7 +29,12 @@ final readonly class DbalContactMessageRepository implements ContactMessageRepos
                 'created_at' => $createdAt,
             ],
             [
+                'id' => ParameterType::STRING,
+                'full_name' => ParameterType::STRING,
+                'email' => ParameterType::STRING,
+                'message' => ParameterType::STRING,
                 'consent' => ParameterType::BOOLEAN,
+                'created_at' => ParameterType::STRING,
             ],
         );
     }

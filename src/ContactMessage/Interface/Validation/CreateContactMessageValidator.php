@@ -6,6 +6,7 @@ namespace App\ContactMessage\Interface\Validation;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\Constraints\Email;
 use Symfony\Component\Validator\Constraints\IsTrue;
+use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Type;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -22,9 +23,9 @@ class CreateContactMessageValidator
     public function __construct(private readonly ValidatorInterface $validator)
     {
         $this->rules = [
-            'fullName' => [new NotBlank()],
-            'email' => [new NotBlank(), new Email()],
-            'message' => [new NotBlank()],
+            'fullName' => [new NotBlank(), new Length(max: 255)],
+            'email' => [new NotBlank(), new Email(), new Length(max: 255)],
+            'message' => [new NotBlank(), new Length(max: 5000)],
             'consent' => [new Type('boolean'), new IsTrue()],
         ];
     }
