@@ -1,0 +1,4 @@
+doctrine:
+    dbal:
+        url: '%env(resolve:DATABASE_URL)%'
+        # Let Doctrine infer the driver from DATABASE_URL (PostgreSQL in prod, SQLite in tests)
