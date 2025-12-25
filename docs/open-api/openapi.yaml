@@ -1,0 +1,132 @@
+openapi: 3.0.3
+info:
+  title: Contact Messages API
+  version: 1.0.0
+  description: |
+    Simple API for handling a website contact form.
+
+    Endpoints:
+    - POST `/contact-messages` — creates a contact message.
+    - GET `/contact-messages` — returns a list of stored messages.
+servers:
+  - url: /
+paths:
+  /contact-messages:
+    post:
+      operationId: createContactMessage
+      summary: Create a contact message
+      description: |
+        Validation is performed in the controller. When validation fails, the API returns HTTP 400 with a map of errors.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactMessageCreateRequest'
+            examples:
+              valid:
+                summary: Valid example
+                value:
+                  fullName: John Doe
+                  email: john.doe@example.com
+                  message: Please contact me about the offer.
+                  consent: true
+      responses:
+        '201':
+          description: Created (empty response body)
+        '400':
+          description: Input validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+              example:
+                errors:
+                  fullName:
+                    - 'This value should not be blank.'
+                  email:
+                    - 'This value should not be blank.'
+                    - 'This value is not a valid email address.'
+                  message:
+                    - 'This value should not be blank.'
+                  consent:
+                    - 'This value should be of type boolean.'
+                    - 'This value should be true.'
+        '500':
+          description: Internal server error (empty response body)
+    get:
+      operationId: listContactMessages
+      summary: List contact messages
+      responses:
+        '200':
+          description: List of contact messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContactMessage'
+              example:
+                - id: 019b56eb-c530-735a-8dfe-42cd78d0fed6
+                  fullName: John Doe
+                  email: john.doe@example.com
+                  message: Please contact me about the offer.
+                  consentApproved: true
+                  createdAt: '2025-01-01T12:34:56+00:00'
+components:
+  schemas:
+    ContactMessageCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [fullName, email, message, consent]
+      properties:
+        fullName:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        message:
+          type: string
+          example: Please contact me about the offer.
+        consent:
+          type: boolean
+          description: Consent for personal data processing; must be true
+          example: true
+    ContactMessage:
+      type: object
+      required: [id, fullName, email, message, consentApproved, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 019b56eb-c530-735a-8dfe-42cd78d0fed6
+        fullName:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        message:
+          type: string
+          example: Please contact me about the offer.
+        consentApproved:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-01-01T12:34:56+00:00'
+    ValidationErrorsResponse:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: A map of field names to an array of error messages
