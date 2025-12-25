@@ -5,6 +5,7 @@ namespace App\ContactMessage\Interface\Http;
 use App\ContactMessage\Application\Command\CreateContactMessageCommand;
 use App\ContactMessage\Application\Query\ListContactMessageQueryInterface;
 use App\ContactMessage\Application\Query\ViewInterface;
+use App\ContactMessage\Interface\Sanitizer\SanitizerInterface;
 use App\ContactMessage\Interface\Validation\CreateContactMessageValidator;
 use DateTimeInterface;
 use Psr\Clock\ClockInterface;
@@ -24,6 +25,7 @@ class ContactMessageController extends AbstractController
         private readonly MessageBusInterface $bus,
         private readonly ClockInterface $clock,
         private readonly LoggerInterface $logger,
+        private readonly SanitizerInterface $sanitizer,
     ) {
     }
 
@@ -39,6 +41,7 @@ class ContactMessageController extends AbstractController
         if (!is_array($data)) {
             return $this->respondBadRequest(['body' => ['Invalid JSON']]);
         }
+        $data = $this->sanitizer->sanitizeAll($data);
 
         if ($validator->isValid($data)) {
             try {
@@ -63,8 +66,17 @@ class ContactMessageController extends AbstractController
     }
 
     #[Route('/contact-messages', name: 'contact_message_list', methods: ['GET'])]
-    public function list(ListContactMessageQueryInterface $query): JsonResponse
+    public function list(Request $request, ListContactMessageQueryInterface $query): JsonResponse
     {
+        $contentType = $request->headers->get('Content-Type');
+        if ($contentType !== 'application/json') {
+            return $this->respondBadRequest(['contentType' => ['Invalid Content-Type']]);
+        }
+        $accept = $request->headers->get('Accept');
+        if ($accept !== 'application/json') {
+            return $this->respondBadRequest(['accept' => ['Invalid Accept']]);
+        }
+
         return $this->jsonListResponse($query->list());
     }
 

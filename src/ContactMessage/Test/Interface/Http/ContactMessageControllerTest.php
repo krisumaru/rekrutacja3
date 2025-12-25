@@ -7,6 +7,7 @@ use App\ContactMessage\Application\Command\CreateContactMessageCommand;
 use App\ContactMessage\Application\Query\ContactMessageView;
 use App\ContactMessage\Application\Query\ListContactMessageQueryInterface;
 use App\ContactMessage\Interface\Http\ContactMessageController;
+use App\ContactMessage\Interface\Sanitizer\SanitizerInterface;
 use App\ContactMessage\Interface\Validation\CreateContactMessageValidator;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -27,23 +28,26 @@ final class ContactMessageControllerTest extends TestCase
     private ClockInterface $clock;
     /** @var LoggerInterface&MockObject */
     private LoggerInterface $logger;
+    /** @var SanitizerInterface&MockObject */
+    private SanitizerInterface $sanitizer;
 
     protected function setUp(): void
     {
         $this->bus = $this->createMock(MessageBusInterface::class);
         $this->clock = $this->createMock(ClockInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->sanitizer = $this->createMock(SanitizerInterface::class);
     }
 
     #[AllowMockObjectsWithoutExpectations]
     public function testCreateReturnsBadRequestOnInvalidJson(): void
     {
-        $controller = new ContactMessageController($this->bus, $this->clock, $this->logger);
+        $controller = new ContactMessageController($this->bus, $this->clock, $this->logger, $this->sanitizer);
         // AbstractController::json() accesses the container; provide a dummy one
         $controller->setContainer($this->createMock(ContainerInterface::class));
         $validator = $this->createMock(CreateContactMessageValidator::class);
 
-        $request = new Request(content: '{invalid-json}');
+        $request = new Request(server: ['CONTENT_TYPE' => 'application/json'], content: '{invalid-json}');
         $response = $controller->create($request, $validator);
 
         self::assertSame(400, $response->getStatusCode());
@@ -52,13 +56,29 @@ final class ContactMessageControllerTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testCreateReturnsBadRequestWhenValidationFails(): void
     {
-        $controller = new ContactMessageController($this->bus, $this->clock, $this->logger);
+        $controller = new ContactMessageController($this->bus, $this->clock, $this->logger, $this->sanitizer);
         $controller->setContainer($this->createMock(ContainerInterface::class));
         $validator = $this->createMock(CreateContactMessageValidator::class);
-        $validator->method('isValid')->willReturn(false);
+        $this->sanitizer
+            ->expects(self::once())
+            ->method('sanitizeAll')
+            ->with(self::isType('array'))
+            ->willReturn([
+                'fullName' => '',
+                'email' => '',
+                'message' => '',
+                'consent' => false,
+            ]);
+
+        $validator->method('isValid')->with([
+            'fullName' => '',
+            'email' => '',
+            'message' => '',
+            'consent' => false,
+        ])->willReturn(false);
         $validator->method('getViolations')->willReturn(['fullName' => ['Not blank']]);
 
-        $request = new Request(content: json_encode([
+        $request = new Request(server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
             'fullName' => '', 'email' => '', 'message' => '', 'consent' => false,
         ], JSON_THROW_ON_ERROR));
 
@@ -73,10 +93,27 @@ final class ContactMessageControllerTest extends TestCase
         $fixedNow = new DateTimeImmutable('2025-01-01T00:00:00+00:00');
         $this->clock->method('now')->willReturn($fixedNow);
 
-        $controller = new ContactMessageController($this->bus, $this->clock, $this->logger);
+        $controller = new ContactMessageController($this->bus, $this->clock, $this->logger, $this->sanitizer);
         $controller->setContainer($this->createMock(ContainerInterface::class));
         $validator = $this->createMock(CreateContactMessageValidator::class);
-        $validator->method('isValid')->willReturn(true);
+        // Sanitizer returns normalized values
+        $this->sanitizer
+            ->expects(self::once())
+            ->method('sanitizeAll')
+            ->with(self::isType('array'))
+            ->willReturn([
+                'fullName' => 'Jan',
+                'email' => 'jan@example.com',
+                'message' => 'Hello',
+                'consent' => true,
+            ]);
+
+        $validator->method('isValid')->with([
+            'fullName' => 'Jan',
+            'email' => 'jan@example.com',
+            'message' => 'Hello',
+            'consent' => true,
+        ])->willReturn(true);
 
         $this->bus
             ->expects(self::once())
@@ -97,7 +134,7 @@ final class ContactMessageControllerTest extends TestCase
             }))
             ->willReturn(new Envelope(new \stdClass()));
 
-        $request = new Request(content: json_encode([
+        $request = new Request(server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
             'fullName' => 'Jan', 'email' => 'jan@example.com', 'message' => 'Hello', 'consent' => true,
         ], JSON_THROW_ON_ERROR));
 
@@ -111,17 +148,31 @@ final class ContactMessageControllerTest extends TestCase
         $fixedNow = new DateTimeImmutable('2025-01-01T00:00:00+00:00');
         $this->clock->method('now')->willReturn($fixedNow);
 
-        $controller = new ContactMessageController($this->bus, $this->clock, $this->logger);
+        $controller = new ContactMessageController($this->bus, $this->clock, $this->logger, $this->sanitizer);
         $controller->setContainer($this->createMock(ContainerInterface::class));
         $validator = $this->createMock(CreateContactMessageValidator::class);
-        $validator->method('isValid')->willReturn(true);
+        $this->sanitizer
+            ->expects(self::once())
+            ->method('sanitizeAll')
+            ->willReturn([
+                'fullName' => 'Jan',
+                'email' => 'jan@example.com',
+                'message' => 'Hello',
+                'consent' => true,
+            ]);
+        $validator->method('isValid')->with([
+            'fullName' => 'Jan',
+            'email' => 'jan@example.com',
+            'message' => 'Hello',
+            'consent' => true,
+        ])->willReturn(true);
 
         $this->bus
             ->expects(self::once())
             ->method('dispatch')
             ->willThrowException(new \RuntimeException('fail'));
 
-        $request = new Request(content: json_encode([
+        $request = new Request(server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
             'fullName' => 'Jan', 'email' => 'jan@example.com', 'message' => 'Hello', 'consent' => true,
         ], JSON_THROW_ON_ERROR));
 
@@ -132,7 +183,7 @@ final class ContactMessageControllerTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testListMapsRowsToExpectedJson(): void
     {
-        $controller = new ContactMessageController($this->bus, $this->clock, $this->logger);
+        $controller = new ContactMessageController($this->bus, $this->clock, $this->logger, $this->sanitizer);
         $controller->setContainer($this->createMock(ContainerInterface::class));
 
         /** @var ListContactMessageQueryInterface&MockObject $query */
@@ -148,7 +199,8 @@ final class ContactMessageControllerTest extends TestCase
             ]),
         ]);
 
-        $response = $controller->list($query);
+        $request = new Request(server: ['CONTENT_TYPE' => 'application/json']);
+        $response = $controller->list($request, $query);
         self::assertSame(200, $response->getStatusCode());
         $data = json_decode((string) $response->getContent(), true, flags: JSON_THROW_ON_ERROR);
         self::assertCount(1, $data);
