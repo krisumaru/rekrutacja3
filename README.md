@@ -1,7 +1,7 @@
-#Disclaimer#
+### Disclaimer ###
 This may seem to be overkill for a simple contact form to use such approach. But currently I work in a company where we have to develop a modular monolith
 app, and it was easier for me to implement it this way.
-#Key improvements that can be done#
+## Key improvements that can be done ##
 This is only a test app, so there are some shortcuts that can be improved.
 1. The api is not protected. It would be better to protect it with a JWT token or some other authentication method. This was intentionally skipped.
 2. The app store all data as simple text. It could use some encoding/decoding for all sensitive data like email and messages sent through the contact form. 
