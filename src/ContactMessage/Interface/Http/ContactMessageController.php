@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\DBAL\Connection;
 use Psr\Clock\ClockInterface;
+use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,6 +23,7 @@ class ContactMessageController extends AbstractController
     public function __construct(
         private readonly MessageBusInterface $bus,
         private readonly ClockInterface $clock,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -44,7 +46,7 @@ class ContactMessageController extends AbstractController
                     $this->clock->now()->format(DateTimeInterface::RFC3339),
                 ));
             } catch (Throwable $e) {
-                // log exception
+                $this->logger->error($e->getMessage());
                 return $this->respondInternalServerError();
             }
 
