@@ -15,7 +15,7 @@ unit:
 	$(COMPOSE) exec -T $(SERVICE) ./vendor/bin/phpunit
 
 phpstan:
-	$(COMPOSE) exec -T $(SERVICE) ./vendor/bin/phpstan analyse -c phpstan.neon.dist
+	$(COMPOSE) exec -T $(SERVICE) ./vendor/bin/phpstan analyse -c phpstan.neon.dist --memory-limit=1G
 
 # Helpers
 stop:

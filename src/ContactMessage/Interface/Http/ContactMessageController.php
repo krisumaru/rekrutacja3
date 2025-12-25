@@ -3,10 +3,10 @@
 namespace App\ContactMessage\Interface\Http;
 
 use App\ContactMessage\Application\Command\CreateContactMessageCommand;
+use App\ContactMessage\Application\Query\ListContactMessageQueryInterface;
+use App\ContactMessage\Application\Query\ViewInterface;
 use App\ContactMessage\Interface\Validation\CreateContactMessageValidator;
-use DateTimeImmutable;
 use DateTimeInterface;
-use Doctrine\DBAL\Connection;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
@@ -58,21 +58,9 @@ class ContactMessageController extends AbstractController
     }
 
     #[Route('/contact-messages', name: 'contact_message_list', methods: ['GET'])]
-    public function list(Connection $conn): JsonResponse
+    public function list(ListContactMessageQueryInterface $query): JsonResponse
     {
-        $rows = $conn->fetchAllAssociative('SELECT id, full_name, email, message, created_at FROM contact_messages ORDER BY id DESC');
-        $data = array_map(static function (array $row) {
-            $createdAt = new DateTimeImmutable(is_string($row['created_at']) ? $row['created_at'] : 'now');
-            return [
-                'id' => (int) $row['id'],
-                'fullName' => $row['full_name'],
-                'email' => $row['email'],
-                'message' => $row['message'],
-                'createdAt' => $createdAt->format(DATE_ATOM),
-            ];
-        }, $rows);
-
-        return new JsonResponse($data);
+        return $this->jsonListResponse($query->list());
     }
 
     /**
@@ -91,5 +79,18 @@ class ContactMessageController extends AbstractController
     public function respondInternalServerError(): Response
     {
         return new Response('', Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * @param array<string, ViewInterface> $list
+     */
+    private function jsonListResponse(array $list): JsonResponse
+    {
+        return new JsonResponse(
+            array_map(static function (ViewInterface $item) {
+                return $item->toPrimitiveArray();
+            }, $list),
+            Response::HTTP_OK,
+        );
     }
 }
