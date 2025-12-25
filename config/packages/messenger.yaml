@@ -1,0 +1,7 @@
+framework:
+  messenger:
+    default_bus: messenger.bus.default
+    transports:
+      sync: 'sync://'
+    routing:
+      'App\\Message\\CreateContactMessage': sync
