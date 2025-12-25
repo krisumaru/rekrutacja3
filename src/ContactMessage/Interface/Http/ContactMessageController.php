@@ -4,6 +4,7 @@ namespace App\ContactMessage\Interface\Http;
 
 use App\ContactMessage\Application\Command\CreateContactMessageCommand;
 use App\ContactMessage\Interface\Validation\CreateContactMessageValidator;
+use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\DBAL\Connection;
 use Psr\Clock\ClockInterface;
@@ -59,7 +60,7 @@ class ContactMessageController extends AbstractController
     {
         $rows = $conn->fetchAllAssociative('SELECT id, full_name, email, message, created_at FROM contact_messages ORDER BY id DESC');
         $data = array_map(static function (array $row) {
-            $createdAt = new \DateTimeImmutable(is_string($row['created_at']) ? $row['created_at'] : 'now');
+            $createdAt = new DateTimeImmutable(is_string($row['created_at']) ? $row['created_at'] : 'now');
             return [
                 'id' => (int) $row['id'],
                 'fullName' => $row['full_name'],
@@ -72,6 +73,9 @@ class ContactMessageController extends AbstractController
         return new JsonResponse($data);
     }
 
+    /**
+     * @param array<string, array<string>> $violations
+     */
     public function respondBadRequest(array $violations): JsonResponse
     {
         return $this->json(['errors' => $violations], Response::HTTP_BAD_REQUEST);

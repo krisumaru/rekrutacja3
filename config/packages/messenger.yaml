@@ -4,4 +4,4 @@ framework:
     transports:
       sync: 'sync://'
     routing:
-      'App\\Message\\CreateContactMessage': sync
+      App\ContactMessage\Application\Command\CreateContactMessageCommand: sync

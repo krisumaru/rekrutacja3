@@ -3,20 +3,30 @@ declare(strict_types=1);
 
 namespace App\ContactMessage\Interface\Validation;
 
+use Symfony\Component\Validator\Constraint;
+use Symfony\Component\Validator\Constraints\Email;
+use Symfony\Component\Validator\Constraints\IsTrue;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Type;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class CreateContactMessageValidator
 {
+    /** @var array<string, array<string>> */
     private array $violations = [];
-    private array $rules = [
-        'fullName' => ['notBlank'],
-        'email' => ['email'],
-        'message' => ['notBlank'],
-        'consent' => ['true'],
-    ];
+
+
+    /** @var array<string, array<Constraint>> */
+    private array $rules;
 
     public function __construct(private readonly ValidatorInterface $validator)
     {
+        $this->rules = [
+            'fullName' => [new NotBlank()],
+            'email' => [new NotBlank(), new Email()],
+            'message' => [new NotBlank()],
+            'consent' => [new Type('boolean'), new IsTrue()],
+        ];
     }
 
     /**
@@ -31,14 +41,14 @@ class CreateContactMessageValidator
     {
         $extraKeys = array_diff_key($data, $this->rules);
         if (count($extraKeys) > 0) {
-            $this->violations['extraKeys'] = 'Unsupported keys provided: ' . join(',', array_keys($extraKeys));
+            $this->violations['extraKeys'] = ['Unsupported keys provided: ' . join(',', array_keys($extraKeys))];
             return false;
         }
         foreach ($this->rules as $property => $constraints) {
             $violations = $this->validator->validate($data[$property] ?? null, $constraints);
             if ($violations->count() > 0) {
                 foreach ($violations as $violation) {
-                    $this->violations[$property] = $violation->getMessage();
+                    $this->violations[$property][] = (string) $violation->getMessage();
                 }
             }
         }
