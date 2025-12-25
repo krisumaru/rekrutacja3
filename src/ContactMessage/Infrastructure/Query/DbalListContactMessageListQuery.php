@@ -27,7 +27,7 @@ final readonly class DbalListContactMessageListQuery implements ListContactMessa
          * }> $rows
          */
         $rows = $this->connection->fetchAllAssociative(
-            'SELECT id, full_name, email, message, created_at FROM contact_messages ORDER BY id DESC',
+            'SELECT id, full_name, email, message, consent, created_at FROM contact_messages ORDER BY id DESC',
         );
 
         return array_map(static function ($row) {
