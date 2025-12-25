@@ -43,6 +43,9 @@ class ContactMessageController extends AbstractController
         }
         $data = $this->sanitizer->sanitizeAll($data);
 
+        /**
+         * @var array{fullName: string, email: string, message: string, consent: bool} $data
+         */
         if ($validator->isValid($data)) {
             try {
                 $this->bus->dispatch(new CreateContactMessageCommand(

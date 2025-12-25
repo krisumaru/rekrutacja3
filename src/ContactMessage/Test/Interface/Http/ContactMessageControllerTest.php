@@ -62,7 +62,7 @@ final class ContactMessageControllerTest extends TestCase
         $this->sanitizer
             ->expects(self::once())
             ->method('sanitizeAll')
-            ->with(self::isType('array'))
+            ->with(self::isArray())
             ->willReturn([
                 'fullName' => '',
                 'email' => '',
@@ -100,7 +100,7 @@ final class ContactMessageControllerTest extends TestCase
         $this->sanitizer
             ->expects(self::once())
             ->method('sanitizeAll')
-            ->with(self::isType('array'))
+            ->with(self::isArray())
             ->willReturn([
                 'fullName' => 'Jan',
                 'email' => 'jan@example.com',
@@ -199,7 +199,10 @@ final class ContactMessageControllerTest extends TestCase
             ]),
         ]);
 
-        $request = new Request(server: ['CONTENT_TYPE' => 'application/json']);
+        $request = new Request(server: [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_ACCEPT' => 'application/json',
+        ]);
         $response = $controller->list($request, $query);
         self::assertSame(200, $response->getStatusCode());
         $data = json_decode((string) $response->getContent(), true, flags: JSON_THROW_ON_ERROR);

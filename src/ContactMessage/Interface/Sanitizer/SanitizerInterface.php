@@ -9,9 +9,9 @@ interface SanitizerInterface
     public function sanitize(string $value): string;
 
     /**
-     * @param array<string, string> $values
+     * @param array<string, mixed> $values
      *
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     public function sanitizeAll(array $values): array;
 }
